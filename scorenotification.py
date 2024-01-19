@@ -15,9 +15,9 @@
 # waiting for get_by_role("button", name="查询")
 #       的报错，关掉重新运行就好了（可能是网不好或者服务器卡了）
 
-xuehao = "3220100059"  # 这里改学号
-mima = "lzx20041212"  # 这里改密码
-dingTalkWebHook = "https://oapi.dingtalk.com/robot/send?access_token=c62419abe952f338c47f2904674cf20b51f9bfdd57b8d92606a615023587adc8"  # 粘贴钉钉机器人的 webhook
+xuehao = ""  # 这里改学号
+mima = ""  # 这里改密码
+dingTalkWebHook = ""  # 粘贴钉钉机器人的 webhook
 xuenian = "2023-2024"
 scores = []
 
@@ -146,9 +146,10 @@ async def main():
         with open("counter.txt", "w", encoding="utf-8") as f:
             f.write(str(times))
 
-        length = len(scores)
-
         time.sleep(60)
 
-
-asyncio.run(main())
+def scorenotification():
+    d = json.load(open("database.json", "r", encoding="utf-8"))
+    global xuehao, mima, dingTalkWebHook
+    xuehao, mima, dingTalkWebHook = d["username"], d["password"], d["url"]
+    asyncio.run(main())
