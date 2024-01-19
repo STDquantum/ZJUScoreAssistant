@@ -107,14 +107,17 @@ def main(xuenian=""):
         # NJU
         totalJiDianNJU += baifen / 20.0 * xuefen
 
+    if totalXueFen == 0.0:
+        return
     print(f"学年: {xuenian if xuenian else '全部'}")
-    print("你", end="")
     for i in ["ZJU", "FDU", "SJTU", "USTC", "NJU"]:
         print(f"你在{i}的绩点为 {eval(f'totalJiDian{i}') / totalXueFen : .2f}", end=", ")
     print("\n")
 
 
 if __name__ == "__main__":
+    main("2020-2021")
+    main("2021-2022")
     main("2022-2023")
     main("2023-2024")
     main()
