@@ -6,6 +6,10 @@ https://github.com/PeiPei233/ZJUScoreAssistant 的个人修改版，结合了去
 
 ```
 git clone https://github.com/STDquantum/ZJUScoreAssistant
+
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+playwright install chrome
 ```
 
 或者直接下载 zip。
