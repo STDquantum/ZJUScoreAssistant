@@ -7,7 +7,7 @@ import requests
 import colorama
 from colorama import Fore
 from zjusess import zjusess
-from scorenotification import scorenotification
+# from scorenotification import scorenotification
 
 # 用于中文对齐输出 
 def pad_len(string, length):
@@ -277,4 +277,4 @@ if __name__ == '__main__':
         pass
 
     if args.dnotification:
-        scorenotification()
+        from scorenotification import main
