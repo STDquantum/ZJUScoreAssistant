@@ -197,7 +197,7 @@ if __name__ == '__main__':
                 gpa = 0
                 if totcredit != 0:
                     gpa = gp / totcredit
-                print_log(LOG.done, 'Your GPA during the whole college is %.2f and GP is %.2f' % (gpa, gp))
+                print_log(LOG.done, f'Your GPA during the whole college is {gpa:.3f} and GP is {gp:.2f}')
 
         elif len(args.gpa) == 1:
 
@@ -223,7 +223,7 @@ if __name__ == '__main__':
                         year = i.get('xn')
                         break
 
-                print_log(LOG.done, 'Your GPA during the academic year of %s is %.2f and GP is %.2f' % (year, gpa, gp))
+                print_log(LOG.done, f'Your GPA during the academic year of {year} is {gpa:.3f} and GP is {gp:.2f}')
 
         elif len(args.gpa) >= 2:
             if len(args.gpa) > 2:
@@ -252,7 +252,7 @@ if __name__ == '__main__':
                         year = i.get('xn')
                         break
 
-                print_log(LOG.done, 'Your GPA during the semester of %s %s is %.2f and GP is %.2f' % (year, semster, gpa, gp))
+                print_log(LOG.done, f'Your GPA during the semester of {year} {semster} is {gpa:.3f} and GP is {gp:.2f}')
 
     try:
         if args.ding:
