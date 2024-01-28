@@ -147,11 +147,13 @@ async def main():
 
         time.sleep(60)
 
+
 def scorenotification():
     d = json.load(open("database.json", "r", encoding="utf-8"))
     global xuehao, mima, dingTalkWebHook
     xuehao, mima, dingTalkWebHook = d["username"], d["password"], d["url"]
     asyncio.run(main())
+
 
 if __name__ == "__main__":
     scorenotification()
