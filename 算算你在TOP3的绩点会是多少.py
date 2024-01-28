@@ -111,7 +111,7 @@ def main(xuenian=""):
         return
     print(f"学年: {xuenian if xuenian else '全部'}")
     for i in ["ZJU", "FDU", "SJTU", "USTC", "NJU"]:
-        print(f"你在{i}的绩点为 {eval(f'totalJiDian{i}') / totalXueFen : .2f}", end=", ")
+        print(f"你在{i}的绩点为 {eval(f'totalJiDian{i}') / totalXueFen :.2f}", end=", ")
     print("\n")
 
 
