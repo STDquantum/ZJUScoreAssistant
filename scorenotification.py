@@ -46,7 +46,7 @@ def sendToDingTalk(score, totalXueFen, totalJiDian, totalBaifen):
 
 
 async def run(playwright: Playwright) -> None:
-    browser = await playwright.chromium.launch(headless=True)
+    browser = await playwright.chromium.launch(headless=False)
     context = await browser.new_context()
     page = await context.new_page()
     await page.goto(
@@ -60,7 +60,7 @@ async def run(playwright: Playwright) -> None:
     time.sleep(4)
     con = await page.content()
     r = re.findall(
-        r'kcmc">(.+?)</d.+?学分：([0-9\.]+).+?学年：([0-9-\.]+).+?学期：(.+?)</p.+?绩点：([0-9\.]+).+?ccj">(\w+)',
+        r'kcmc">(.+?)</d.+?学分：([0-9\.]+).+?学年：([0-9-\.]+).+?学期：(.*?)</p.+?绩点：([0-9\.]+).+?ccj">(\w+)',
         con,
     )
 
@@ -99,7 +99,7 @@ async def main():
         try:
             async with async_playwright() as playwright:
                 newScores = await run(playwright)
-                tmp = ["秋", "冬", "秋冬", "春", "夏", "春夏", "短"]
+                tmp = ["秋", "冬", "秋冬", "春", "夏", "春夏", "短", ""]
                 newScores.sort(key=lambda x: tmp.index(x[3]))
                 newScores.sort(key=lambda x: int(x[2].split("-")[0]))
                 newScores = [list(i) for i in newScores]
@@ -113,6 +113,11 @@ async def main():
             if score in scores:
                 continue
             if score[5] in ["弃修", "合格", "不合格"]:
+                scores.append(score)
+                printf()
+                print(score)
+                continue
+            if score[0] == "英语水平测试":
                 scores.append(score)
                 printf()
                 print(score)

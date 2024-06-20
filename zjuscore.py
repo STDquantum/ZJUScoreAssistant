@@ -131,7 +131,7 @@ if __name__ == "__main__":
                 res = session.get(r"http://appservice.zju.edu.cn/zdjw/cjcx/cjcxjg")
                 res = session.post(
                     "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kkqk_cxXscjxx"
-                )
+                )   
 
                 data = dict(enumerate(res.json()["data"]["list"]))
                 with open("userscore.json", "w", encoding="utf-8") as f:
