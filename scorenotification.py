@@ -57,7 +57,7 @@ async def run(playwright: Playwright) -> None:
     await page.get_by_placeholder("职工号/学号/手机号码/邮箱/别名").press("Tab")
     await page.get_by_role("textbox", name="输入密码").fill(mima)
     await page.get_by_role("textbox", name="输入密码").press("Enter")
-    time.sleep(4)
+    time.sleep(16)
     con = await page.content()
     r = re.findall(
         r'kcmc">(.+?)</d.+?学分：([0-9\.]+).+?学年：([0-9-\.]+).+?学期：(.*?)</p.+?绩点：([0-9\.]+).+?ccj">(\w+)',
