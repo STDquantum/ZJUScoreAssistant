@@ -70,6 +70,10 @@ def updatescore():
     for lesson in userscore:
         if userscore[lesson]['score'] in ['合格', '不合格', '弃修']:
             continue
+        if str.isalpha(userscore[lesson]['score'][0]):
+            # 国际课程用于计算国际化分数的课成绩为字母开头，绩点为0，计入总学分不计入均绩
+            if float(userscore[lesson]['gp']) == 0.0:
+                continue
         totgp += float(userscore[lesson]['gp']) * float(userscore[lesson]['credit'])
         totcredits += float(userscore[lesson]['credit'])
     try:
@@ -101,6 +105,9 @@ def updatescore():
         for lesson in userscore:
             if userscore[lesson]['score'] in ['合格', '不合格', '弃修']:
                 continue
+            if str.isalpha(userscore[lesson]['score'][0]):
+                if float(userscore[lesson]['gp']) == 0.0:
+                    continue
             newtotgp += float(userscore[lesson]['gp']) * float(userscore[lesson]['credit'])
             newtotcredits += float(userscore[lesson]['credit'])
         try:
