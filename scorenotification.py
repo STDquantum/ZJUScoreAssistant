@@ -1,164 +1,255 @@
-# 程序更新啦，不用手动复制了，会自动保存到一个文件里
-# 嘿大家好，这是我自己写的一个可以提示新的【绩点】的 python 程序（目前已知适用于windows）
-# 原理就是模仿登录查成绩的网站，然后用正则表达式搞到所有信息
-# 目前是获取所有上过课的成绩
-# 使用方法如下：
-#   1. 下载 python
-#   2. win+R，输入 cmd 回车，然后输入 pip install playwright
-#   3. 然后输入 playwright install chrome
-#   4. 把这条朵朵全文复制到一个 python 文件里，保存（似乎朵朵会吞掉空格，我在评论区放一个链接）
-#   5. 修改 xuehao 和 mima 两个变量为自己登陆浙大通行证用的账号密码
-#   6. 以文件的形式运行，如果出了新的绩点会弹窗提示，一直让它在那运行着就好，一分钟访问一次
-#   7. 运行窗口会显示一个列表，里面有这节课的各种信息，文件会保存一个scores.txt的文件在同目录下，不用手动复制辽~再次打开时也是可以直接读取这个文件的~
-#   8. 运行窗口什么都没有是正常情况，有新的会提示，没有就会静默，如果出现类似playwright._impl._api_types.TimeoutError: Timeout 30000ms exceeded.
-# =========================== logs ===========================
-# waiting for get_by_role("button", name="查询")
-#       的报错，关掉重新运行就好了（可能是网不好或者服务器卡了）
-
-xuehao = ""  # 这里改学号
-mima = ""  # 这里改密码
-dingTalkWebHook = ""  # 粘贴钉钉机器人的 webhook
-xuenian = "2023-2024"
-scores = []
-
-import asyncio
-from playwright.async_api import Playwright, async_playwright
-import time
+import requests
 import re
 import json
-import requests
+import math
+import time
+import random
 
+def get_sso_cookie(username: str, password: str):
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0"
+    })
 
-def sendToDingTalk(score, totalXueFen, totalJiDian, totalBaifen):
     try:
-        requests.post(
-            url=dingTalkWebHook,
-            json={
-                "msgtype": "markdown",
-                "markdown": {
-                    "title": "考试成绩通知",
-                    "text": f"## 考试成绩通知\n\n- **选课课号**\t{score[0]}\n\n- **课程名称**\t{score[1]}\n\n- **成绩**\t{score[2]}\n\n- **学分**\t{score[3]}\n\n- **绩点**\t{score[4]}\n\n- **学年总学分**\t{totalXueFen}\n\n- **学年均绩**\t{totalJiDian / totalXueFen : .2f}\n\n- **学年百分制均分**\t{totalBaifen / totalXueFen : .2f}",
-                },
-            },
-        )
-    except:
-        print("钉钉成绩发送失败")
+        # Step 1: 获取登录页面，提取 execution 值
+        resp = session.get('https://zjuam.zju.edu.cn/cas/login', timeout=8, allow_redirects=False)
+        execution_match = re.search(r'name="execution" value="(.*?)"', resp.text)
+        if not execution_match:
+            raise "无法获取execution"
+        execution = execution_match.group(1)
 
+        # Step 2: 获取 RSA 公钥
+        pubkey_resp = session.get('https://zjuam.zju.edu.cn/cas/v2/getPubKey', timeout=8)
+        pubkey_json = pubkey_resp.json()
+        modulus_str = pubkey_json.get("modulus")
+        exponent_str = pubkey_json.get("exponent")
+        if not modulus_str or not exponent_str:
+            raise "无法获取RSA公钥"
 
-async def run(playwright: Playwright) -> None:
-    browser = await playwright.chromium.launch(headless=False)
-    context = await browser.new_context()
-    page = await context.new_page()
-    await page.goto(
-        "https://zjuam.zju.edu.cn/cas/login?service=http%3A%2F%2Fappservice.zju.edu.cn%2Fzdjw%2Fcjcx%2Fcjcxjg"
-    )
-    await page.get_by_placeholder("职工号/学号/手机号码/邮箱/别名").click()
-    await page.get_by_placeholder("职工号/学号/手机号码/邮箱/别名").fill(xuehao)
-    await page.get_by_placeholder("职工号/学号/手机号码/邮箱/别名").press("Tab")
-    await page.get_by_role("textbox", name="输入密码").fill(mima)
-    await page.get_by_role("textbox", name="输入密码").press("Enter")
-    time.sleep(16)
-    con = await page.content()
-    r = re.findall(
-        r'kcmc">(.+?)</d.+?学分：([0-9\.]+).+?学年：([0-9-\.]+).+?学期：(.*?)</p.+?绩点：([0-9\.]+).+?ccj">(\w+)',
-        con,
-    )
-
-    # ---------------------
-    await context.close()
-    await browser.close()
-
-    return r
-
-
-def printf():  # 把新的列表打印到 scores.txt
-    s = "["
-    for score in scores:
-        s += str(score) + ",\n"
-    s = s[:-2] + "]"
-    s = s.replace("'", '"')
-    open("scores-浙大钉.txt", "w", encoding="utf-8").write(s)
-
-
-async def main():
-    global scores
-    try:
-        scores = json.load(open("scores-浙大钉.txt", "r", encoding="utf-8"))
-    except:
-        scores = []
-    try:
-        with open("counter.txt", "r", encoding="utf-8") as f:
-            times = int(f.read())
-    except:
-        times = 0
-    while True:
-        times += 1
-        print(
-            time.strftime("%m-%d %H:%M:%S", time.localtime()), f"第 {times} 次运行", end="，"
-        )
+        # Step 3: 执行 RSA 加密
         try:
-            async with async_playwright() as playwright:
-                newScores = await run(playwright)
-                tmp = ["秋", "冬", "秋冬", "春", "夏", "春夏", "短", ""]
-                newScores.sort(key=lambda x: tmp.index(x[3]))
-                newScores.sort(key=lambda x: int(x[2].split("-")[0]))
-                newScores = [list(i) for i in newScores]
-        except:
-            print("不正常运行，出现错误，一分钟后重试")
-            with open("counter.txt", "w", encoding="utf-8") as f:
-                f.write(str(times))
-            time.sleep(60)
+            mod_int = int(modulus_str, 16)
+            exp_int = int(exponent_str, 16)
+            pwd_bytes = password.encode("utf-8")
+            pwd_int = int(pwd_bytes.hex(), 16)
+            pwd_enc_int = pow(pwd_int, exp_int, mod_int)
+            pwd_enc = format(pwd_enc_int, 'x').zfill(128)
+        except Exception:
+            raise "密码不合法"
+
+        # Step 4: 提交登录表单
+        data = {
+            "username": username,
+            "password": pwd_enc,
+            "execution": execution,
+            "_eventId": "submit",
+            "rememberMe": "true"
+        }
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded; charset=utf-8"
+        }
+        login_resp = session.post(
+            'https://zjuam.zju.edu.cn/cas/login',
+            data=data,
+            headers=headers,
+            timeout=8,
+            allow_redirects=False
+        )
+
+        # Step 5: 检查是否登录成功（是否有 iPlanetDirectoryPro Cookie）
+        for cookie in session.cookies:
+            if cookie.name == "iPlanetDirectoryPro":
+                return cookie
+
+        raise "学号或密码错误"
+
+    except requests.exceptions.Timeout:
+        raise "请求超时"
+    except requests.exceptions.RequestException:
+        raise "网络错误"
+
+def login(iPlanetDirectoryPro) -> bool:
+    if iPlanetDirectoryPro is None:
+        raise "iPlanetDirectoryPro无效"
+
+    session = requests.Session()
+    session.headers.update({"User-Agent": "Mozilla/5.0"})
+
+    # 设置 iPlanetDirectoryPro cookie
+    session.cookies.set(
+        name=iPlanetDirectoryPro.name,
+        value=iPlanetDirectoryPro.value,
+        domain="zjuam.zju.edu.cn"
+    )
+
+    try:
+        # Step 1: 访问 login 接口获取 st ticket
+        url = "https://zjuam.zju.edu.cn/cas/login?service=http%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"
+        resp = session.get(url, timeout=8, allow_redirects=False)
+
+        # 获取跳转地址
+        st_location = resp.headers.get("Location")
+        if not st_location:
+            raise "iPlanetDirectoryPro无效"
+
+        if st_location.startswith("http://"):
+            st_location = st_location.replace("http://", "https://")
+
+        # Step 2: 跟随跳转
+        resp2 = session.get(st_location, timeout=8, allow_redirects=False)
+
+        # 检查 cookies
+        global jsessionid, route
+        jsessionid = None
+        route = None
+        for cookie in session.cookies:
+            if cookie.name == "JSESSIONID" and cookie.path == "/jwglxt":
+                jsessionid = cookie.value
+            elif cookie.name == "route":
+                route = cookie.value
+
+        if not jsessionid:
+            raise "无法获取JSESSIONID"
+        if not route:
+            raise "无法获取route"
+
+        return True
+
+    except requests.exceptions.Timeout:
+        raise "请求超时"
+    except requests.exceptions.RequestException:
+        raise "网络错误"
+
+
+def query_grades():
+    if jsessionid is None or route is None:
+        raise "未登录"
+
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0"
+    })
+
+    # 设置 cookies
+    session.cookies.set("JSESSIONID", jsessionid, domain="zdbk.zju.edu.cn", path="/jwglxt")
+    session.cookies.set("route", route, domain="zdbk.zju.edu.cn")
+
+    try:
+        url = (
+            "https://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html"
+            "?doType=query&queryModel.showCount=5000"
+        )
+        response = session.post(url, timeout=8, allow_redirects=False)
+
+        return response
+
+    except requests.exceptions.Timeout:
+        raise "请求超时"
+    except requests.exceptions.RequestException:
+        raise "网络错误"
+            
+            
+def update_score(new_score, url):
+    try:
+        with open("dingscore.json", 'r', encoding="utf-8") as load_f:
+            userscore = json.load(load_f)
+    except json.decoder.JSONDecodeError:
+        userscore = {}
+    except FileNotFoundError:
+        userscore = {}
+
+    totcredits = 0
+    totgp = 0
+    for lesson in userscore:
+        if userscore[lesson]['score'] in ['合格', '不合格', '弃修']:
             continue
-        for score in newScores:
-            if score in scores:
+        totgp += float(userscore[lesson]['gp']) * float(userscore[lesson]['credit'])
+        totcredits += float(userscore[lesson]['credit'])
+    try:
+        gpa = totgp / totcredits
+    except:
+        gpa = 0
+
+    #对比以更新
+    for lesson in new_score:
+        id = lesson['xkkh']
+        name = lesson['kcmc']
+        score = lesson['cj']
+        credit = lesson['xf']
+        gp = lesson['jd']
+        if id == '选课课号':
+            continue
+        if userscore.get(id) != None:
+            continue
+        
+        #新的成绩更新
+        userscore[id] = {
+            'name': name,
+            'score': score,
+            'credit': credit,
+            'gp': gp
+        }
+        newtotcredits = 0
+        newtotgp = 0
+        for lesson in userscore:
+            if userscore[lesson]['score'] in ['合格', '不合格', '弃修']:
                 continue
-            if score[5] in ["弃修", "合格", "不合格"]:
-                scores.append(score)
-                printf()
-                print(score)
-                continue
-            if score[0] == "英语水平测试":
-                scores.append(score)
-                printf()
-                print(score)
-                continue
-            if xuenian != score[2]:
-                scores.append(score)
-                printf()
-                print(score)
-                continue
-            if score not in scores:
-                scores.append(score)
-                printf()
-                print(score)
-                totalXueFen, totalJiDian, totalBaifen = 0, 0, 0
-                for s in scores:
-                    if xuenian != s[2]:
-                        continue
-                    totalXueFen += float(s[1])
-                    totalJiDian += float(s[4]) * float(s[1])
-                    totalBaifen += float(s[5]) * float(s[1])
+            newtotgp += float(userscore[lesson]['gp']) * float(userscore[lesson]['credit'])
+            newtotcredits += float(userscore[lesson]['credit'])
+        try:
+            newgpa = newtotgp / newtotcredits
+        except:
+            newgpa = 0
+        
+        #钉钉推送消息
+        try:
+            requests.post(url=url, json={
+                "msgtype": "markdown",
+                "markdown" : {
+                    "title": "考试成绩通知",
+                    "text": """
+### 考试成绩通知\n
+- **选课课号**\t%s\n
+- **课程名称**\t%s\n
+- **成绩**\t%s\n
+- **学分**\t%s\n
+- **绩点**\t%s\n
+- **成绩变化**\t%.2f(%+.2f) / %.1f(%+.1f)""" % (id, name, score, credit, gp, newgpa, newgpa - gpa, newtotcredits, newtotcredits - totcredits)
+                }
+            })
+        except requests.exceptions.MissingSchema:
+            print('The DingTalk Webhook URL is invalid. Please use -d [DingWebhook] to reset it first.')
+        
+        print('考试成绩通知\n选课课号\t%s\n课程名称\t%s\n成绩\t%s\n学分\t%s\n绩点\t%s\n成绩变化\t%.2f(%+.2f) / %.1f(%+.1f)' % (id, name, score, credit, gp, newgpa, newgpa - gpa, newtotcredits, newtotcredits - totcredits))
+        totcredits = newtotcredits
+        totgp = newtotgp
+        gpa = newgpa
 
-                sendToDingTalk(score, totalXueFen, totalJiDian, totalBaifen)
-                print(
-                    f"总学分: {totalXueFen : .1f}, 均绩: {totalJiDian / totalXueFen : .3f}"
-                )
-                # os.system(f'mshta vbscript:msgbox("科目：{s[0]}, 绩点：{s[4]}, 百分制：{s[5]}")(window.close)')
-        else:
-            print("正常运行，没有新绩点")
-
-        with open("counter.txt", "w", encoding="utf-8") as f:
-            f.write(str(times))
-
-        time.sleep(60)
-
-
+    #保存新的数据
+    with open("dingscore.json", 'w', encoding="utf-8") as load_f:
+        load_f.write(json.dumps(userscore, indent=4, ensure_ascii=False))
+            
 def scorenotification():
-    d = json.load(open("database.json", "r", encoding="utf-8"))
-    global xuehao, mima, dingTalkWebHook
-    xuehao, mima, dingTalkWebHook = d["username"], d["password"], d["url"]
-    asyncio.run(main())
+    with open('database.json', 'r') as f:
+        userdata = json.load(f)
+    username = userdata['username']
+    password = userdata['password']
+    url = userdata.get('url', 'https://oapi.dingtalk.com/robot/send?access_token=')
 
+    iPlanetDirectoryPro = get_sso_cookie(username, password)
+    
+    login(iPlanetDirectoryPro)
+    
+    new_score = query_grades().json()['items']
 
+    update_score(new_score, url)
+    
 if __name__ == "__main__":
-    scorenotification()
+    while True:
+        try:
+            scorenotification()
+        except Exception as e:
+            print(f"发生错误: {e}")
+
+        time.sleep(random.randint(60, 300))  # 随机延时1到5秒
