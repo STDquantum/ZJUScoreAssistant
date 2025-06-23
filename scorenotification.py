@@ -49,25 +49,11 @@ def updatescore():
     # 登录
     res = session.post('https://zjuam.zju.edu.cn/cas/login?service=http://zdbk.zju.edu.cn/jwglxt/xtgl/login_ssologin.html', data)
     
-    gnmkdm = 'N5083'
-
     headers = {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Mobile Safari/537.36',
     }
 
-    res = session.post(url=f'http://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&gnmkdm={gnmkdm}&su={username}', data={
-        'xn': None,
-        'xq': None,
-        'zscjl': None,
-        'zscjr': None,
-        '_search': 'false',
-        'nd': str(int(time.time() * 1000)),
-        'queryModel.showCount': 5000,
-        'queryModel.currentPage': 1,
-        'queryModel.sortName': 'xkkh',
-        'queryModel.sortOrder': 'asc',
-        'time': 0,
-    }, headers=headers)
+    res = session.post(url=f'http://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&queryModel.showCount=5000', headers=headers)
 
     new_score = res.json()['items']
     
