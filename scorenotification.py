@@ -1,9 +1,11 @@
 import requests
 import re
 import json
-import math
 import time
 import random
+
+class ExceptionWithMessage(Exception):
+    pass
 
 def get_sso_cookie(username: str, password: str):
     session = requests.Session()
@@ -16,7 +18,7 @@ def get_sso_cookie(username: str, password: str):
         resp = session.get('https://zjuam.zju.edu.cn/cas/login', timeout=8, allow_redirects=False)
         execution_match = re.search(r'name="execution" value="(.*?)"', resp.text)
         if not execution_match:
-            raise "无法获取execution"
+            raise ExceptionWithMessage("无法获取execution")
         execution = execution_match.group(1)
 
         # Step 2: 获取 RSA 公钥
@@ -25,7 +27,7 @@ def get_sso_cookie(username: str, password: str):
         modulus_str = pubkey_json.get("modulus")
         exponent_str = pubkey_json.get("exponent")
         if not modulus_str or not exponent_str:
-            raise "无法获取RSA公钥"
+            raise ExceptionWithMessage("无法获取RSA公钥")
 
         # Step 3: 执行 RSA 加密
         try:
@@ -36,7 +38,7 @@ def get_sso_cookie(username: str, password: str):
             pwd_enc_int = pow(pwd_int, exp_int, mod_int)
             pwd_enc = format(pwd_enc_int, 'x').zfill(128)
         except Exception:
-            raise "密码不合法"
+            raise ExceptionWithMessage("密码不合法")
 
         # Step 4: 提交登录表单
         data = {
@@ -62,16 +64,16 @@ def get_sso_cookie(username: str, password: str):
             if cookie.name == "iPlanetDirectoryPro":
                 return cookie
 
-        raise "学号或密码错误"
+        raise ExceptionWithMessage("学号或密码错误")
 
     except requests.exceptions.Timeout:
-        raise "请求超时"
+        raise ExceptionWithMessage("请求超时")
     except requests.exceptions.RequestException:
-        raise "网络错误"
+        raise ExceptionWithMessage("网络错误")
 
 def login(iPlanetDirectoryPro) -> bool:
     if iPlanetDirectoryPro is None:
-        raise "iPlanetDirectoryPro无效"
+        raise ExceptionWithMessage("iPlanetDirectoryPro无效")
 
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
@@ -91,7 +93,7 @@ def login(iPlanetDirectoryPro) -> bool:
         # 获取跳转地址
         st_location = resp.headers.get("Location")
         if not st_location:
-            raise "iPlanetDirectoryPro无效"
+            raise ExceptionWithMessage("iPlanetDirectoryPro无效")
 
         if st_location.startswith("http://"):
             st_location = st_location.replace("http://", "https://")
@@ -110,21 +112,21 @@ def login(iPlanetDirectoryPro) -> bool:
                 route = cookie.value
 
         if not jsessionid:
-            raise "无法获取JSESSIONID"
+            raise ExceptionWithMessage("无法获取JSESSIONID")
         if not route:
-            raise "无法获取route"
+            raise ExceptionWithMessage("无法获取route")
 
         return True
 
     except requests.exceptions.Timeout:
-        raise "请求超时"
+        raise ExceptionWithMessage("请求超时")
     except requests.exceptions.RequestException:
-        raise "网络错误"
+        raise ExceptionWithMessage("网络错误")
 
 
 def query_grades():
     if jsessionid is None or route is None:
-        raise "未登录"
+        raise ExceptionWithMessage("未登录")
 
     session = requests.Session()
     session.headers.update({
@@ -145,9 +147,9 @@ def query_grades():
         return response
 
     except requests.exceptions.Timeout:
-        raise "请求超时"
+        raise ExceptionWithMessage("请求超时")
     except requests.exceptions.RequestException:
-        raise "网络错误"
+        raise ExceptionWithMessage("网络错误")
             
             
 def update_score(new_score, url):
@@ -162,7 +164,7 @@ def update_score(new_score, url):
     totcredits = 0
     totgp = 0
     for lesson in userscore:
-        if userscore[lesson]['score'] in ['合格', '不合格', '弃修']:
+        if userscore[lesson]['score'] in ['合格', '不合格', '弃修', 'A']:
             continue
         totgp += float(userscore[lesson]['gp']) * float(userscore[lesson]['credit'])
         totcredits += float(userscore[lesson]['credit'])
@@ -252,4 +254,4 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"发生错误: {e}")
 
-        time.sleep(random.randint(60, 300))  # 随机延时1到5秒
+        time.sleep(random.randint(6, 10))  # 随机延时1到5秒
