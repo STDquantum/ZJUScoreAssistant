@@ -190,7 +190,7 @@ def update_score(new_score, url):
         newtotcredits = 0
         newtotgp = 0
         for lesson in userscore:
-            if userscore[lesson]['score'] in ['合格', '不合格', '弃修']:
+            if userscore[lesson]['score'] in ['合格', '不合格', '弃修', 'A']:
                 continue
             newtotgp += float(userscore[lesson]['gp']) * float(userscore[lesson]['credit'])
             newtotcredits += float(userscore[lesson]['credit'])
