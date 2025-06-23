@@ -8,10 +8,7 @@ class ExceptionWithMessage(Exception):
     pass
 
 def get_sso_cookie(username: str, password: str):
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0"
-    })
+    global session
 
     try:
         # Step 1: 获取登录页面，提取 execution 值
@@ -71,18 +68,17 @@ def get_sso_cookie(username: str, password: str):
     except requests.exceptions.RequestException:
         raise ExceptionWithMessage("网络错误")
 
-def login(iPlanetDirectoryPro) -> bool:
+def login(iPlanetDirectoryPro):
+    global session
+    
     if iPlanetDirectoryPro is None:
         raise ExceptionWithMessage("iPlanetDirectoryPro无效")
-
-    session = requests.Session()
-    session.headers.update({"User-Agent": "Mozilla/5.0"})
 
     # 设置 iPlanetDirectoryPro cookie
     session.cookies.set(
         name=iPlanetDirectoryPro.name,
         value=iPlanetDirectoryPro.value,
-        domain="zjuam.zju.edu.cn"
+        domain=".zju.edu.cn"
     )
 
     try:
@@ -125,13 +121,10 @@ def login(iPlanetDirectoryPro) -> bool:
 
 
 def query_grades():
+    global session, jsessionid, route
+    
     if jsessionid is None or route is None:
         raise ExceptionWithMessage("未登录")
-
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0"
-    })
 
     # 设置 cookies
     session.cookies.set("JSESSIONID", jsessionid, domain="zdbk.zju.edu.cn", path="/jwglxt")
@@ -153,6 +146,8 @@ def query_grades():
             
             
 def update_score(new_score, url):
+    global session
+    
     try:
         with open("dingscore.json", 'r', encoding="utf-8") as load_f:
             userscore = json.load(load_f)
@@ -248,6 +243,10 @@ def scorenotification():
     update_score(new_score, url)
     
 if __name__ == "__main__":
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0"
+    })
     while True:
         try:
             scorenotification()
