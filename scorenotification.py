@@ -228,6 +228,12 @@ def update_score(new_score, url):
         load_f.write(json.dumps(userscore, indent=4, ensure_ascii=False))
             
 def scorenotification():
+    global session
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0"
+    })
+    
     with open('database.json', 'r') as f:
         userdata = json.load(f)
     username = userdata['username']
@@ -243,10 +249,6 @@ def scorenotification():
     update_score(new_score, url)
     
 if __name__ == "__main__":
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0"
-    })
     while True:
         try:
             scorenotification()
