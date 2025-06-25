@@ -24,7 +24,7 @@ def updatescore():
     session = requests.session()
 
     # 打开网站
-    res = session.get('https://zjuam.zju.edu.cn/cas/login?service=http://zdbk.zju.edu.cn/jwglxt/xtgl/login_ssologin.html')
+    res = session.get('https://zjuam.zju.edu.cn/cas/login?service=https://zdbk.zju.edu.cn/jwglxt/xtgl/login_ssologin.html')
     # 获取execution的值以用于登录
     execution = re.findall(r'<input type="hidden" name="execution" value="(.*?)" />', res.text)[0]
     # 获取RSA公钥
@@ -47,14 +47,30 @@ def updatescore():
         '_eventId': 'submit'
     }
     # 登录
-    res = session.post('https://zjuam.zju.edu.cn/cas/login?service=http://zdbk.zju.edu.cn/jwglxt/xtgl/login_ssologin.html', data)
+    res = session.post('https://zjuam.zju.edu.cn/cas/login?service=https://zdbk.zju.edu.cn/jwglxt/xtgl/login_ssologin.html', data)
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Mobile Safari/537.36',
     }
 
-    res = session.post(url=f'http://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&queryModel.showCount=5000', headers=headers)
-
+    res = session.post(
+        url=f"https://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&gnmkdm=N5083&su={username}",
+        data={
+            "xn": None,
+            "xq": None,
+            "zscjl": None,
+            "zscjr": None,
+            "_search": "false",
+            "nd": str(int(time.time() * 1000)),
+            "queryModel.showCount": "5000",
+            "queryModel.currentPage": "1",
+            "queryModel.sortName": "xkkh",
+            "queryModel.sortOrder": "asc",
+            "time": 0,
+        },
+        headers=headers,
+    )
+    
     new_score = res.json()['items']
     
     try:
@@ -151,3 +167,6 @@ def scorenotification():
             print(time.ctime() + " " + str(e))
         finally:
             time.sleep(random.randint(60, 300))
+            
+if __name__ == "__main__":
+    scorenotification()
