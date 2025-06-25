@@ -83,7 +83,7 @@ def login(iPlanetDirectoryPro):
 
     try:
         # Step 1: 访问 login 接口获取 st ticket
-        url = "https://zjuam.zju.edu.cn/cas/login?service=http%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"
+        url = "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"
         resp = session.get(url, timeout=8, allow_redirects=False)
 
         # 获取跳转地址
